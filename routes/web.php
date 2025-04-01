@@ -7,5 +7,9 @@ Route::get('/', function () {
     return inertia('WelcomePage');
 });
 
+Route::get('/home', function () {
+    return inertia('HomePage');
+});
+
 Route::get('/login', [LoginController::class, 'index']);
 Route::post('/login', [LoginController::class, 'store']);

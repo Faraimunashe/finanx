@@ -15,7 +15,7 @@
     </header>
 
     <main class="relative h-screen flex items-center justify-center text-center px-6">
-        <div class="absolute inset-0 bg-cover bg-center animate-fadeIn" style="background-image: url('../../assets/img/1.png');">
+        <div class="absolute inset-0 bg-cover bg-center animate-fadeIn" :style="{ backgroundImage: `url(${background_image})` }">
             <div class="absolute inset-0 bg-green-900 bg-opacity-60"></div>
         </div>
         <div class="relative z-10 max-w-4xl">
@@ -81,3 +81,7 @@
         </div>
     </footer>
 </template>
+
+<script setup>
+import background_image from '../../assets/img/1.png';
+</script>
