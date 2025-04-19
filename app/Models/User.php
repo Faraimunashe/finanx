@@ -55,7 +55,14 @@ class User extends Authenticatable implements LaratrustUser, Auditable
 
     public function organizations()
     {
-        return $this->belongsToMany(Organization::class, 'user_organizations')
-                    ->withTimestamps();
+        return $this->belongsToMany(Organization::class, 'user_organizations');
     }
+
+    public function selected_organization()
+    {
+        return $this->belongsTo(Organization::class, 'organization_id', 'id')
+            ->using(SelectedOrganization::class)
+            ->withTimestamps();
+    }
+
 }

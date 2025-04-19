@@ -15,10 +15,11 @@ return [
         'admin' => [
             'users' => 'c,r,u,d',
             'transactions' => 'c,r,u,d',
+            'organizations' => 'c,r,u,d',
             'accounts' => 'c,r,u,d',
             'profile' => 'r,u',
         ],
-        'accountant' => [
+        'treasurer' => [
             'users' => 'c,r,u,d',
             'transactions' => 'c,r,u,d',
             'accounts' => 'c,r,u,d',

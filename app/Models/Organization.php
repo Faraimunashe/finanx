@@ -20,8 +20,13 @@ class Organization extends Model implements Auditable
 
     public function users()
     {
-        return $this->belongsToMany(User::class, 'user_organizations')
-                    ->withTimestamps();
+        return $this->belongsToMany(User::class, 'user_organizations');
     }
+
+    public function selected_by_users()
+    {
+        return $this->hasMany(SelectedOrganization::class);
+    }
+
 
 }
