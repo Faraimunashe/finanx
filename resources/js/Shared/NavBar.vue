@@ -7,9 +7,9 @@
 
         <!-- Navigation Links -->
         <div class="flex items-center space-x-6">
-          <button class="text-sm hover:text-emerald-600">Dashboard</button>
-          <button class="text-sm hover:text-emerald-600">Accounts</button>
-          <button class="text-sm hover:text-emerald-600">Transactions</button>
+          <Link href="/dashboard" class="text-sm hover:text-emerald-600">Dashboard</Link>
+          <Link href="/accounts" class="text-sm hover:text-emerald-600">Accounts</Link>
+          <Link href="/transactions" class="text-sm hover:text-emerald-600">Transactions</Link>
           <button class="text-sm hover:text-emerald-600">Reports</button>
 
           <!-- Avatar + Dropdown -->

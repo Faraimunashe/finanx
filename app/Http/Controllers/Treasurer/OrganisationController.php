@@ -76,9 +76,7 @@ class OrganisationController extends Controller
         try {
             $organization = Auth::user()->organizations()->findOrFail($id);
             select_org($id);
-            return inertia('Treasurer/Organization/ShowOrganizationPage', [
-                'organization' => $organization
-            ]);
+            return redirect()->route('dashboard.index');
         } catch (Exception $e) {
             return back()->withErrors(['error' => $e->getMessage()]);
         }
