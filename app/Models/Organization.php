@@ -28,5 +28,4 @@ class Organization extends Model implements Auditable
         return $this->hasMany(SelectedOrganization::class);
     }
 
-
 }

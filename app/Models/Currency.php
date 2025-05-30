@@ -10,5 +10,12 @@ class Currency extends Model implements Auditable
 {
     use SoftDeletes;
     use \OwenIt\Auditing\Auditable;
-    protected $fillable = ['code'];
+    protected $fillable = ['code', 'country'];
+
+    public function organizations()
+    {
+        return $this->belongsToMany(Organization::class, 'organization_currencies', 'currency_id', 'organization_id')
+                    ->withTimestamps();
+    }
+
 }

@@ -126,15 +126,20 @@ export default {
         start_date: this.filters?.start_date || "",
         end_date: this.filters?.end_date || "",
       },
-      transactions: this.recent_transactions.map((tx) => ({
+    };
+  },
+  computed: {
+    transactions() {
+      // Transform transactions for display
+      return this.recent_transactions.map((tx) => ({
         id: tx.id,
         date: tx.transaction_date,
         account: tx.account?.name || "N/A",
-        type: tx.type === "revenue" ? "Credit" : "Debit",
+        type: tx.type,
         amount: parseFloat(tx.amount).toFixed(2),
         currency: tx.currency?.code || "USD",
-      })),
-    };
+      }));
+    },
   },
   methods: {
     formatCurrency(amount, currencyCode = "USD") {
@@ -144,7 +149,8 @@ export default {
       })}`;
     },
     applyFilter() {
-      router.get(route("dashboard.index"), this.filterForm, {
+      // Trigger a GET request to /dashboard.index route with filterForm data
+      router.get("/dashboard", this.filterForm, {
         preserveState: true,
         preserveScroll: true,
       });
@@ -152,3 +158,4 @@ export default {
   },
 };
 </script>
+

@@ -11,6 +11,7 @@
           <Link href="/accounts" class="text-sm hover:text-emerald-600">Accounts</Link>
           <Link href="/transactions" class="text-sm hover:text-emerald-600">Transactions</Link>
           <button class="text-sm hover:text-emerald-600">Reports</button>
+          <Link href="/currencies" class="text-sm hover:text-emerald-600">Currencies</Link>
 
           <!-- Avatar + Dropdown -->
           <div class="relative">

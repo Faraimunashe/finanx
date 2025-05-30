@@ -14,48 +14,40 @@ class DashboardController extends Controller
      */
     public function index(Request $request)
     {
-        $organization_id = selected_org()->id;
+        $organizationId = selected_org()->id;
+        $startDate = $request->start_date;
+        $endDate = $request->end_date;
 
-        $start_date = $request->start_date;
-        $end_date = $request->end_date;
-
-        $recent_transactions = Transaction::whereHas('account', function ($query) use ($organization_id) {
-                $query->where('organization_id', $organization_id);
-            })
-            ->when($start_date, function ($query) use ($start_date) {
-                $query->whereDate('transaction_date', '>=', $start_date);
-            })
-            ->when($end_date, function ($query) use ($end_date) {
-                $query->whereDate('transaction_date', '<=', $end_date);
-            })
+        // Recent transactions (with account and currency eager loading)
+        $recentTransactions = Transaction::with('account', 'currency')
+            ->whereHas('account', fn ($query) => $query->where('organization_id', $organizationId))
+            ->when($startDate, fn ($query) => $query->whereDate('transaction_date', '>=', $startDate))
+            ->when($endDate, fn ($query) => $query->whereDate('transaction_date', '<=', $endDate))
             ->orderBy('transaction_date', 'desc')
             ->take(10)
             ->get();
 
+        // Summaries per currency (calculate total revenue and total expense)
         $summaries = Transaction::select(
                 'currency_id',
-                DB::raw("SUM(CASE WHEN type = 'revenue' THEN amount ELSE 0 END) AS total_revenue"),
-                DB::raw("SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) AS total_expense")
+                DB::raw("SUM(CASE WHEN type = 'Credit' THEN amount ELSE 0 END) as total_revenue"),
+                DB::raw("SUM(CASE WHEN type = 'Debit' THEN amount ELSE 0 END) as total_expense")
             )
-            ->whereHas('account', function ($query) use ($organization_id) {
-                $query->where('organization_id', $organization_id);
-            })
-            ->when($start_date, function ($query) use ($start_date) {
-                $query->whereDate('transaction_date', '>=', $start_date);
-            })
-            ->when($end_date, function ($query) use ($end_date) {
-                $query->whereDate('transaction_date', '<=', $end_date);
-            })
+            ->whereHas('account', fn ($query) => $query->where('organization_id', $organizationId))
+            ->when($startDate, fn ($query) => $query->whereDate('transaction_date', '>=', $startDate))
+            ->when($endDate, fn ($query) => $query->whereDate('transaction_date', '<=', $endDate))
             ->groupBy('currency_id')
-            ->with('currency')
             ->get();
 
+        // Attach related currency model data
+        $summaries->load('currency');
+
         return inertia('Treasurer/DashboardPage', [
-            'recent_transactions' => $recent_transactions,
+            'recent_transactions' => $recentTransactions,
             'summaries' => $summaries,
             'filters' => [
-                'start_date' => $start_date,
-                'end_date' => $end_date,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
             ],
         ]);
     }

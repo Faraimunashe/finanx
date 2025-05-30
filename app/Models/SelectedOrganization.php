@@ -17,4 +17,10 @@ class SelectedOrganization extends Model
     {
         return $this->belongsTo(Organization::class);
     }
+
+    public function currencies()
+    {
+        return $this->belongsToMany(Currency::class, 'organization_currencies', 'organization_id', 'currency_id')
+                    ->withTimestamps();
+    }
 }

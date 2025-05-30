@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Transaction;
 use App\Models\Account;
 use App\Models\Currency;
+use App\Models\OrganizationCurrency;
 use Inertia\Inertia;
 
 class TransactionController extends Controller
@@ -40,14 +41,15 @@ class TransactionController extends Controller
             $query->whereDate('transaction_date', '<=', $request->end_date);
         }
 
-        $transactions = $query->latest()
+        $transactions = $query->orderBy('transaction_date', 'desc')
             ->paginate(20)
             ->withQueryString();
 
-        $accounts = \App\Models\Account::where('organization_id', $organizationId)->get();
-        $currencies = \App\Models\Currency::all();
+        $accounts = Account::where('organization_id', $organizationId)->get();
 
-        return Inertia::render('Treasurer/Transactions/Index', [
+        $currencies = Currency::whereHas('organizations', fn ($q) => $q->where('organization_id', $organizationId))->get();
+
+        return Inertia::render('Treasurer/TransactionsPage', [
             'transactions' => $transactions,
             'filters' => $filters,
             'accounts' => $accounts,
@@ -55,12 +57,17 @@ class TransactionController extends Controller
         ]);
     }
 
-
     public function create()
     {
+        $organizationId = selected_org()->id;
+
+        $accounts = Account::where('organization_id', $organizationId)->get();
+
+        $currencies = Currency::whereHas('organizations', fn ($q) => $q->where('organization_id', $organizationId))->get();
+
         return Inertia::render('Treasurer/Transactions/Create', [
-            'accounts' => Account::where('organization_id', selected_org()->id)->get(),
-            'currencies' => Currency::all()
+            'accounts' => $accounts,
+            'currencies' => $currencies,
         ]);
     }
 
@@ -69,7 +76,7 @@ class TransactionController extends Controller
         $request->validate([
             'account_id' => 'required|exists:accounts,id',
             'currency_id' => 'required|exists:currencies,id',
-            'type' => 'required|in:revenue,expense',
+            'type' => 'required|in:Credit,Debit',
             'amount' => 'required|numeric|min:0.01',
             'description' => 'nullable|string|max:500',
             'transaction_date' => 'required|date',
@@ -103,33 +110,45 @@ class TransactionController extends Controller
 
     public function edit(string $id)
     {
-        $transaction = Transaction::with('account')
-            ->whereHas('account', fn ($q) => $q->where('organization_id', selected_org()->id))
+        $organizationId = selected_org()->id;
+
+        $transaction = Transaction::with('account', 'currency')
+            ->whereHas('account', fn ($q) => $q->where('organization_id', $organizationId))
             ->findOrFail($id);
+
+        $accounts = Account::where('organization_id', $organizationId)->get();
+
+        $currencies = Currency::whereHas('organizations', fn ($q) => $q->where('organization_id', $organizationId))->get();
 
         return Inertia::render('Treasurer/Transactions/Edit', [
             'transaction' => $transaction,
-            'accounts' => Account::where('organization_id', selected_org()->id)->get(),
-            'currencies' => Currency::all(),
+            'accounts' => $accounts,
+            'currencies' => $currencies,
         ]);
     }
 
     public function update(Request $request, string $id)
     {
-        $transaction = Transaction::whereHas('account', fn ($q) => $q->where('organization_id', selected_org()->id))
+        $organizationId = selected_org()->id;
+
+        $transaction = Transaction::whereHas('account', fn ($q) => $q->where('organization_id', $organizationId))
             ->findOrFail($id);
 
         $request->validate([
             'account_id' => 'required|exists:accounts,id',
             'currency_id' => 'required|exists:currencies,id',
-            'type' => 'required|in:revenue,expense',
+            'type' => 'required|in:Credit,Debit',
             'amount' => 'required|numeric|min:0.01',
             'description' => 'nullable|string|max:500',
             'transaction_date' => 'required|date',
         ]);
 
+        $account = Account::where('id', $request->account_id)
+            ->where('organization_id', $organizationId)
+            ->firstOrFail();
+
         $transaction->update([
-            'account_id' => $request->account_id,
+            'account_id' => $account->id,
             'currency_id' => $request->currency_id,
             'type' => $request->type,
             'amount' => $request->amount,
