@@ -65,4 +65,30 @@ Route::group(['middleware' => ['auth', 'role:treasurer']], function () {
     Route::get('/reports/trial-balance', [ReportsController::class, 'trialBalance'])->name('reports.trial-balance');
     Route::get('/reports/general-ledger', [ReportsController::class, 'generalLedger'])->name('reports.general-ledger');
     Route::post('/reports/export', [ReportsController::class, 'export'])->name('reports.export');
+
+    // Users
+    Route::get('/users', [App\Http\Controllers\Treasurer\UserController::class, 'index'])->name('users.index');
+    Route::get('/users/create', [App\Http\Controllers\Treasurer\UserController::class, 'create'])->name('users.create');
+    Route::post('/users', [App\Http\Controllers\Treasurer\UserController::class, 'store'])->name('users.store');
+    Route::get('/users/{id}/edit', [App\Http\Controllers\Treasurer\UserController::class, 'edit'])->name('users.edit');
+    Route::put('/users/{id}', [App\Http\Controllers\Treasurer\UserController::class, 'update'])->name('users.update');
+    Route::delete('/users/{id}', [App\Http\Controllers\Treasurer\UserController::class, 'destroy'])->name('users.destroy');
+    Route::post('/users/confirm-add-existing', [App\Http\Controllers\Treasurer\UserController::class, 'confirmAddExisting'])->name('users.confirm-add-existing');
+});
+
+// User routes
+Route::middleware(['auth'])->prefix('user')->name('user.')->group(function () {
+    Route::get('/dashboard', [App\Http\Controllers\User\DashboardController::class, 'index'])->name('dashboard');
+    Route::post('/select-organization/{organizationId}', [App\Http\Controllers\User\DashboardController::class, 'selectOrganization'])->name('select-organization');
+
+    // Accounts (view only)
+    Route::get('/accounts', [App\Http\Controllers\User\AccountController::class, 'index'])->name('accounts.index');
+    Route::get('/accounts/{id}', [App\Http\Controllers\User\AccountController::class, 'show'])->name('accounts.show');
+
+    // Transactions (view, create, update)
+    Route::get('/transactions', [App\Http\Controllers\User\TransactionController::class, 'index'])->name('transactions.index');
+    Route::get('/transactions/create', [App\Http\Controllers\User\TransactionController::class, 'create'])->name('transactions.create');
+    Route::post('/transactions', [App\Http\Controllers\User\TransactionController::class, 'store'])->name('transactions.store');
+    Route::get('/transactions/{id}/edit', [App\Http\Controllers\User\TransactionController::class, 'edit'])->name('transactions.edit');
+    Route::put('/transactions/{id}', [App\Http\Controllers\User\TransactionController::class, 'update'])->name('transactions.update');
 });
