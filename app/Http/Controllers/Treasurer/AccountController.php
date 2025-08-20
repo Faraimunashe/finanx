@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Treasurer;
 
 use App\Http\Controllers\Controller;
 use App\Models\Account;
+use App\Models\Currency;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -23,7 +24,7 @@ class AccountController extends Controller
             $query->where('name', 'like', '%' . $request->name . '%');
         }
 
-        $accounts = $query->latest()->get();
+        $accounts = $query->withCount('transactions')->latest()->get();
 
         return inertia('Treasurer/AccountsPage', [
             'accounts' => $accounts,
@@ -32,11 +33,6 @@ class AccountController extends Controller
     }
 
 
-    public function create()
-    {
-        return Inertia::render('Treasurer/Accounts/Create');
-    }
-
     public function store(Request $request)
     {
         $request->validate([
@@ -44,55 +40,79 @@ class AccountController extends Controller
             'type' => 'required|in:Asset,Liability,Revenue,Expense',
         ]);
 
-        Account::create([
-            'organization_id' => selected_org()->id,
-            'name' => $request->name,
-            'type' => $request->type,
-        ]);
+        try {
+            Account::create([
+                'organization_id' => selected_org()->id,
+                'name' => $request->name,
+                'type' => $request->type,
+            ]);
 
-        return redirect()->route('accounts.index')->with('success', 'Account created successfully.');
+            return back()->with('success', 'Account created successfully.');
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'Failed to create account. Please try again.']);
+        }
     }
 
     public function show(string $id)
     {
-        $account = Account::where('organization_id', selected_org()->id)->findOrFail($id);
+        try {
+            $account = Account::with('transactions.currency')
+                ->where('organization_id', selected_org()->id)
+                ->findOrFail($id);
 
-        return Inertia::render('Treasurer/Accounts/Show', [
-            'account' => $account
-        ]);
-    }
+            $transactions = $account->transactions()
+                ->with('currency')
+                ->orderBy('transaction_date', 'desc')
+                ->paginate(20);
 
-    public function edit(string $id)
-    {
-        $account = Account::where('organization_id', selected_org()->id)->findOrFail($id);
+            $currencies = Currency::whereHas('organizations', fn ($q) => $q->where('organization_id', selected_org()->id))->get();
 
-        return Inertia::render('Treasurer/Accounts/Edit', [
-            'account' => $account
-        ]);
+            return Inertia::render('Treasurer/AccountDetailsPage', [
+                'account' => $account,
+                'transactions' => $transactions,
+                'currencies' => $currencies,
+            ]);
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'Account not found.']);
+        }
     }
 
     public function update(Request $request, string $id)
     {
-        $account = Account::where('organization_id', selected_org()->id)->findOrFail($id);
+        try {
+            $account = Account::where('organization_id', selected_org()->id)->findOrFail($id);
 
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'type' => 'required|in:Asset,Liability,Revenue,Expense',
-        ]);
+            $request->validate([
+                'name' => 'required|string|max:255',
+                'type' => 'required|in:Asset,Liability,Revenue,Expense',
+            ]);
 
-        $account->update([
-            'name' => $request->name,
-            'type' => $request->type,
-        ]);
+            $account->update([
+                'name' => $request->name,
+                'type' => $request->type,
+            ]);
 
-        return redirect()->route('accounts.index')->with('success', 'Account updated successfully.');
+            return back()->with('success', 'Account updated successfully.');
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'Failed to update account. Please try again.']);
+        }
     }
 
     public function destroy(string $id)
     {
-        $account = Account::where('organization_id', selected_org()->id)->findOrFail($id);
-        $account->delete();
+        try {
+            $account = Account::where('organization_id', selected_org()->id)->findOrFail($id);
 
-        return redirect()->route('accounts.index')->with('success', 'Account deleted.');
+            // Check if account has transactions
+            if ($account->transactions()->count() > 0) {
+                return back()->withErrors(['error' => 'Cannot delete account with existing transactions.']);
+            }
+
+            $account->delete();
+
+            return back()->with('success', 'Account deleted successfully.');
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'Failed to delete account. Please try again.']);
+        }
     }
 }

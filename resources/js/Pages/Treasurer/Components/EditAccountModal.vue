@@ -1,9 +1,9 @@
 <template>
-  <div v-if="show" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div v-if="show && account" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4">
       <!-- Header -->
       <div class="flex items-center justify-between p-6 border-b border-gray-200">
-        <h3 class="text-2xl font-bold text-gray-800">Create New Account</h3>
+        <h3 class="text-2xl font-bold text-gray-800">Edit Account</h3>
         <button @click="$emit('close')" class="text-gray-400 hover:text-gray-600 transition-colors">
           <i class="fas fa-times text-xl"></i>
         </button>
@@ -107,7 +107,7 @@
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
             </svg>
-            {{ form.processing ? 'Creating...' : 'Create Account' }}
+            {{ form.processing ? 'Updating...' : 'Update Account' }}
           </button>
         </div>
       </form>
@@ -117,11 +117,16 @@
 
 <script setup>
 import { useForm } from '@inertiajs/vue3';
+import { watch } from 'vue';
 
 const props = defineProps({
   show: {
     type: Boolean,
     default: false
+  },
+  account: {
+    type: Object,
+    default: null
   },
   errors: {
     type: Object,
@@ -133,13 +138,20 @@ const emit = defineEmits(['close']);
 
 const form = useForm({
   name: '',
-  type: 'Asset'
+  type: ''
 });
 
+// Watch for account changes and populate form
+watch(() => props.account, (newAccount) => {
+  if (newAccount) {
+    form.name = newAccount.name;
+    form.type = newAccount.type;
+  }
+}, { immediate: true });
+
 const submit = () => {
-  form.post('/accounts', {
+  form.put(`/accounts/${props.account.id}`, {
     onSuccess: () => {
-      form.reset();
       emit('close');
     }
   });

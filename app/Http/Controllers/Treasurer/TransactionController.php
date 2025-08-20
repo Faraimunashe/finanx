@@ -45,7 +45,9 @@ class TransactionController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        $accounts = Account::where('organization_id', $organizationId)->get();
+        $accounts = Account::where('organization_id', $organizationId)
+            ->withCount('transactions')
+            ->get();
 
         $currencies = Currency::whereHas('organizations', fn ($q) => $q->where('organization_id', $organizationId))->get();
 
@@ -61,13 +63,17 @@ class TransactionController extends Controller
     {
         $organizationId = selected_org()->id;
 
-        $accounts = Account::where('organization_id', $organizationId)->get();
+        $accounts = Account::where('organization_id', $organizationId)
+            ->withCount('transactions')
+            ->get();
 
         $currencies = Currency::whereHas('organizations', fn ($q) => $q->where('organization_id', $organizationId))->get();
 
-        return Inertia::render('Treasurer/Transactions/Create', [
+        return Inertia::render('Treasurer/TransactionsPage', [
+            'transactions' => collect(),
             'accounts' => $accounts,
             'currencies' => $currencies,
+            'showCreateModal' => true,
         ]);
     }
 
@@ -82,90 +88,125 @@ class TransactionController extends Controller
             'transaction_date' => 'required|date',
         ]);
 
-        $account = Account::where('id', $request->account_id)
-            ->where('organization_id', selected_org()->id)
-            ->firstOrFail();
+        try {
+            $account = Account::where('id', $request->account_id)
+                ->where('organization_id', selected_org()->id)
+                ->firstOrFail();
 
-        $account->transactions()->create([
-            'currency_id' => $request->currency_id,
-            'type' => $request->type,
-            'amount' => $request->amount,
-            'description' => $request->description,
-            'transaction_date' => $request->transaction_date,
-        ]);
+            $account->transactions()->create([
+                'currency_id' => $request->currency_id,
+                'type' => $request->type,
+                'amount' => $request->amount,
+                'description' => $request->description,
+                'transaction_date' => $request->transaction_date,
+            ]);
 
-        return redirect()->route('transactions.index')->with('success', 'Transaction created successfully.');
+            return back()->with('success', 'Transaction created successfully.');
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'Failed to create transaction. Please try again.']);
+        }
     }
 
     public function show(string $id)
     {
-        $transaction = Transaction::with('account', 'currency')
-            ->whereHas('account', fn ($q) => $q->where('organization_id', selected_org()->id))
-            ->findOrFail($id);
+        try {
+            $transaction = Transaction::with('account', 'currency')
+                ->whereHas('account', fn ($q) => $q->where('organization_id', selected_org()->id))
+                ->findOrFail($id);
 
-        return Inertia::render('Treasurer/Transactions/Show', [
-            'transaction' => $transaction,
-        ]);
+            return Inertia::render('Treasurer/TransactionsPage', [
+                'transactions' => Transaction::with('account', 'currency')
+                    ->whereHas('account', fn ($q) => $q->where('organization_id', selected_org()->id))
+                    ->orderBy('transaction_date', 'desc')
+                    ->paginate(20),
+                'selectedTransaction' => $transaction,
+                'accounts' => Account::where('organization_id', selected_org()->id)
+                    ->withCount('transactions')
+                    ->get(),
+                'currencies' => Currency::whereHas('organizations', fn ($q) => $q->where('organization_id', selected_org()->id))->get(),
+            ]);
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'Transaction not found.']);
+        }
     }
 
     public function edit(string $id)
     {
-        $organizationId = selected_org()->id;
+        try {
+            $organizationId = selected_org()->id;
 
-        $transaction = Transaction::with('account', 'currency')
-            ->whereHas('account', fn ($q) => $q->where('organization_id', $organizationId))
-            ->findOrFail($id);
+            $transaction = Transaction::with('account', 'currency')
+                ->whereHas('account', fn ($q) => $q->where('organization_id', $organizationId))
+                ->findOrFail($id);
 
-        $accounts = Account::where('organization_id', $organizationId)->get();
+            $accounts = Account::where('organization_id', $organizationId)
+                ->withCount('transactions')
+                ->get();
 
-        $currencies = Currency::whereHas('organizations', fn ($q) => $q->where('organization_id', $organizationId))->get();
+            $currencies = Currency::whereHas('organizations', fn ($q) => $q->where('organization_id', $organizationId))->get();
 
-        return Inertia::render('Treasurer/Transactions/Edit', [
-            'transaction' => $transaction,
-            'accounts' => $accounts,
-            'currencies' => $currencies,
-        ]);
+            return Inertia::render('Treasurer/TransactionsPage', [
+                'transactions' => Transaction::with('account', 'currency')
+                    ->whereHas('account', fn ($q) => $q->where('organization_id', $organizationId))
+                    ->orderBy('transaction_date', 'desc')
+                    ->paginate(20),
+                'editingTransaction' => $transaction,
+                'accounts' => $accounts,
+                'currencies' => $currencies,
+                'showEditModal' => true,
+            ]);
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'Transaction not found.']);
+        }
     }
 
     public function update(Request $request, string $id)
     {
-        $organizationId = selected_org()->id;
+        try {
+            $organizationId = selected_org()->id;
 
-        $transaction = Transaction::whereHas('account', fn ($q) => $q->where('organization_id', $organizationId))
-            ->findOrFail($id);
+            $transaction = Transaction::whereHas('account', fn ($q) => $q->where('organization_id', $organizationId))
+                ->findOrFail($id);
 
-        $request->validate([
-            'account_id' => 'required|exists:accounts,id',
-            'currency_id' => 'required|exists:currencies,id',
-            'type' => 'required|in:Credit,Debit',
-            'amount' => 'required|numeric|min:0.01',
-            'description' => 'nullable|string|max:500',
-            'transaction_date' => 'required|date',
-        ]);
+            $request->validate([
+                'account_id' => 'required|exists:accounts,id',
+                'currency_id' => 'required|exists:currencies,id',
+                'type' => 'required|in:Credit,Debit',
+                'amount' => 'required|numeric|min:0.01',
+                'description' => 'nullable|string|max:500',
+                'transaction_date' => 'required|date',
+            ]);
 
-        $account = Account::where('id', $request->account_id)
-            ->where('organization_id', $organizationId)
-            ->firstOrFail();
+            $account = Account::where('id', $request->account_id)
+                ->where('organization_id', $organizationId)
+                ->firstOrFail();
 
-        $transaction->update([
-            'account_id' => $account->id,
-            'currency_id' => $request->currency_id,
-            'type' => $request->type,
-            'amount' => $request->amount,
-            'description' => $request->description,
-            'transaction_date' => $request->transaction_date,
-        ]);
+            $transaction->update([
+                'account_id' => $account->id,
+                'currency_id' => $request->currency_id,
+                'type' => $request->type,
+                'amount' => $request->amount,
+                'description' => $request->description,
+                'transaction_date' => $request->transaction_date,
+            ]);
 
-        return redirect()->route('transactions.index')->with('success', 'Transaction updated successfully.');
+            return back()->with('success', 'Transaction updated successfully.');
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'Failed to update transaction. Please try again.']);
+        }
     }
 
     public function destroy(string $id)
     {
-        $transaction = Transaction::whereHas('account', fn ($q) => $q->where('organization_id', selected_org()->id))
-            ->findOrFail($id);
+        try {
+            $transaction = Transaction::whereHas('account', fn ($q) => $q->where('organization_id', selected_org()->id))
+                ->findOrFail($id);
 
-        $transaction->delete();
+            $transaction->delete();
 
-        return redirect()->route('transactions.index')->with('success', 'Transaction deleted.');
+            return back()->with('success', 'Transaction deleted successfully.');
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'Failed to delete transaction. Please try again.']);
+        }
     }
 }

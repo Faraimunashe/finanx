@@ -1,62 +1,91 @@
 <template>
   <div>
     <!-- Page Header -->
-    <div class="mb-6 flex justify-between items-center">
-      <h1 class="text-2xl font-bold text-gray-800">Transactions</h1>
-      <button
-        @click="openCreateModal"
-        class="bg-emerald-600 text-white px-4 py-2 rounded shadow hover:bg-emerald-700"
-      >
-        <i class="fas fa-plus mr-2"></i> New Transaction
-      </button>
-    </div>
-
-    <!-- Filters -->
-    <form @submit.prevent="applyFilter" class="bg-white p-6 rounded-lg shadow-md mb-8 space-y-4 md:space-y-0 md:flex md:items-end md:gap-6">
-      <div class="w-full md:w-1/4">
-        <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
-        <select
-          v-model="filterForm.type"
-          class="pl-3 pr-4 py-2 w-full border border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 bg-white"
-        >
-          <option value="">All</option>
-          <option value="revenue">Revenue</option>
-          <option value="expense">Expense</option>
-        </select>
-      </div>
-      <div class="w-full md:w-1/4">
-        <label class="block text-sm font-medium text-gray-700 mb-1">Account</label>
-        <select
-          v-model="filterForm.account_id"
-          class="pl-3 pr-4 py-2 w-full border border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 bg-white"
-        >
-          <option value="">All</option>
-          <option v-for="account in accounts" :key="account.id" :value="account.id">
-            {{ account.name }}
-          </option>
-        </select>
-      </div>
-      <div class="w-full md:w-1/4">
-        <label class="block text-sm font-medium text-gray-700 mb-1">Currency</label>
-        <select
-          v-model="filterForm.currency_id"
-          class="pl-3 pr-4 py-2 w-full border border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 bg-white"
-        >
-          <option value="">All</option>
-          <option v-for="currency in currencies" :key="currency.id" :value="currency.id">
-            {{ currency.code }}
-          </option>
-        </select>
-      </div>
-      <div class="w-full md:w-auto mt-2 md:mt-0">
+    <div class="mb-8">
+      <nav class="text-sm text-gray-500 mb-2 flex items-center space-x-1">
+        <span class="hover:text-emerald-600 cursor-pointer transition-colors"><i class="fas fa-home"></i></span>
+        <span>/</span>
+        <span class="hover:text-emerald-600 cursor-pointer transition-colors">Dashboard</span>
+        <span>/</span>
+        <span class="text-gray-700 font-medium">Transactions</span>
+      </nav>
+      <div class="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-800 flex items-center">
+            <i class="fas fa-exchange-alt text-emerald-600 mr-3"></i>
+            Financial Transactions
+          </h1>
+          <p class="text-gray-600 mt-2">Track and manage all financial activities across your accounts</p>
+        </div>
         <button
-          type="submit"
-          class="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-md shadow font-medium flex items-center justify-center gap-2"
+          @click="showCreateModal = true"
+          class="bg-emerald-600 text-white px-6 py-3 rounded-lg shadow-lg hover:bg-emerald-700 hover:shadow-xl transition-all font-medium flex items-center gap-2"
         >
-          <i class="fas fa-filter"></i> Filter
+          <i class="fas fa-plus"></i> New Transaction
         </button>
       </div>
-    </form>
+    </div>
+
+    <!-- Account Selector -->
+    <AccountSelector
+      :accounts="accounts"
+      :currencies="currencies"
+      :selected-account-id="filters.account_id"
+      @account-changed="onAccountChanged"
+    />
+
+    <!-- Filters -->
+    <div class="mb-8 bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+      <div class="flex items-center mb-4">
+        <i class="fas fa-filter text-emerald-600 mr-2"></i>
+        <h3 class="text-lg font-semibold text-gray-800">Filter Transactions</h3>
+      </div>
+      <form @submit.prevent="applyFilter" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Transaction Type</label>
+          <select
+            v-model="filterForm.type"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white transition-all"
+          >
+            <option value="">All Types</option>
+            <option value="Credit">Credit</option>
+            <option value="Debit">Debit</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Account</label>
+          <select
+            v-model="filterForm.account_id"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white transition-all"
+          >
+            <option value="">All Accounts</option>
+            <option v-for="account in accounts" :key="account.id" :value="account.id">
+              {{ account.name }}
+            </option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Currency</label>
+          <select
+            v-model="filterForm.currency_id"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white transition-all"
+          >
+            <option value="">All Currencies</option>
+            <option v-for="currency in currencies" :key="currency.id" :value="currency.id">
+              {{ currency.code }}
+            </option>
+          </select>
+        </div>
+        <div class="flex items-end">
+          <button
+            type="submit"
+            class="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all font-medium flex items-center justify-center gap-2"
+          >
+            <i class="fas fa-filter"></i> Apply Filters
+          </button>
+        </div>
+      </form>
+    </div>
 
     <!-- Transactions Table -->
     <div class="overflow-x-auto bg-white rounded-lg shadow">
@@ -81,13 +110,13 @@
                 <div class="flex gap-2">
                   <button
                     @click="openEditModal(transaction)"
-                    class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-md transition"
+                    class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-md transition-colors"
                   >
                     <i class="fas fa-edit mr-1"></i> Edit
                   </button>
                   <button
                     @click="openDeleteModal(transaction)"
-                    class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-md transition"
+                    class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-md transition-colors"
                   >
                     <i class="fas fa-trash-alt mr-1"></i> Delete
                   </button>
@@ -112,129 +141,37 @@
       </template>
     </div>
 
-    <!-- Slide-in Modal -->
-    <div
-      v-if="showModal"
-      class="fixed inset-0 z-50 flex justify-end bg-black bg-opacity-30"
-      @click.self="closeModal"
-    >
-      <div class="bg-white w-full sm:w-3/5 md:w-2/5 lg:w-1/3 h-full shadow-xl p-6 overflow-y-auto transition-all duration-300 ease-in-out">
-        <h2 class="text-xl font-semibold text-gray-800 mb-4">
-          {{ modalMode === 'create' ? 'Create Transaction' : 'Edit Transaction' }}
-        </h2>
-        <form @submit.prevent="submit" class="space-y-5">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Account</label>
-            <select
-              v-model="form.account_id"
-              class="pl-3 pr-4 py-3 w-full border border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 bg-white"
-              required
-            >
-              <option disabled value="">Select account</option>
-              <option v-for="account in accounts" :key="account.id" :value="account.id">
-                {{ account.name }}
-              </option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Currency</label>
-            <select
-              v-model="form.currency_id"
-              class="pl-3 pr-4 py-3 w-full border border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 bg-white"
-              required
-            >
-              <option disabled value="">Select currency</option>
-              <option v-for="currency in currencies" :key="currency.id" :value="currency.id">
-                {{ currency.code }}
-              </option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
-            <select
-              v-model="form.type"
-              class="pl-3 pr-4 py-3 w-full border border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 bg-white"
-              required
-            >
-              <option disabled value="">Select type</option>
-              <option value="Credit">Credit</option>
-              <option value="Debit">Debit</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Amount</label>
-            <input
-              type="number"
-              v-model="form.amount"
-              step="0.01"
-              min="0"
-              class="pl-3 pr-4 py-3 w-full border border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500"
-              required
-            />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea
-              v-model="form.description"
-              class="pl-3 pr-4 py-3 w-full border border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500"
-              placeholder="Optional"
-            ></textarea>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
-            <input
-              type="date"
-              v-model="form.transaction_date"
-              class="pl-3 pr-4 py-3 w-full border border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500"
-              required
-            />
-          </div>
+    <!-- Modals -->
+    <CreateTransactionModal
+      :show="showCreateModal"
+      :accounts="accounts"
+      :currencies="currencies"
+      :errors="$page.props.errors"
+      @close="showCreateModal = false"
+    />
 
-          <div class="flex justify-end gap-3 pt-2">
-            <button
-              type="button"
-              @click="closeModal"
-              class="px-4 py-2 text-gray-700 hover:text-gray-900 bg-gray-100 border border-gray-300 rounded-md shadow-sm hover:bg-gray-200"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              class="px-4 py-2 bg-emerald-600 text-white rounded-md shadow hover:bg-emerald-700"
-            >
-              {{ modalMode === 'create' ? 'Create Transaction' : 'Update Transaction' }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <EditTransactionModal
+      :show="showEditModal"
+      :transaction="editingTransaction"
+      :accounts="accounts"
+      :currencies="currencies"
+      :errors="$page.props.errors"
+      @close="showEditModal = false"
+    />
 
-    <!-- Delete Confirmation Modal -->
-    <div v-if="showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-      <div class="bg-white w-full max-w-md p-6 rounded-lg shadow-lg relative">
-        <h3 class="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-3">
-          <i class="fas fa-exclamation-triangle text-yellow-500 text-xl"></i>
-          Confirm Deletion
-        </h3>
-        <p class="text-gray-600 mb-6">
-          Are you sure you want to delete this transaction?
-        </p>
-        <div class="flex justify-end gap-3">
-          <button
-            @click="closeDeleteModal"
-            class="px-4 py-2 text-gray-700 bg-gray-100 border border-gray-300 rounded hover:bg-gray-200"
-          >
-            Cancel
-          </button>
-          <button
-            @click="confirmDelete"
-            class="px-4 py-2 bg-rose-600 text-white rounded shadow hover:bg-rose-700"
-          >
-            Yes, Delete
-          </button>
-        </div>
-      </div>
-    </div>
+    <DeleteConfirmationModal
+      :show="showDeleteModal"
+      title="Delete Transaction"
+      message="Are you sure you want to delete this transaction? This action cannot be undone."
+      :details="transactionToDelete ? {
+        'Account': transactionToDelete.account?.name,
+        'Type': transactionToDelete.type,
+        'Amount': `${transactionToDelete.amount} ${transactionToDelete.currency?.code}`,
+        'Date': transactionToDelete.transaction_date
+      } : null"
+      :delete-url="transactionToDelete ? `/transactions/${transactionToDelete.id}` : ''"
+      @close="showDeleteModal = false"
+    />
 
     <vue3-snackbar top right :duration="4000"></vue3-snackbar>
   </div>
@@ -242,9 +179,19 @@
 <script>
 import { router } from "@inertiajs/vue3";
 import Layout from "../../Shared/Layout.vue";
+import CreateTransactionModal from './Components/CreateTransactionModal.vue';
+import EditTransactionModal from './Components/EditTransactionModal.vue';
+import DeleteConfirmationModal from './Components/DeleteConfirmationModal.vue';
+import AccountSelector from './Components/AccountSelector.vue';
 
 export default {
   layout: Layout,
+  components: {
+    CreateTransactionModal,
+    EditTransactionModal,
+    DeleteConfirmationModal,
+    AccountSelector,
+  },
   props: {
     transactions: Object,
     accounts: Array,
@@ -253,17 +200,9 @@ export default {
   },
   data() {
     return {
-      showModal: false,
-      modalMode: "create",
-      editingId: null,
-      form: {
-        account_id: "",
-        currency_id: "",
-        type: "",
-        amount: "",
-        description: "",
-        transaction_date: "",
-      },
+      showCreateModal: false,
+      showEditModal: false,
+      editingTransaction: null,
       filterForm: {
         type: this.filters?.type || "",
         account_id: this.filters?.account_id || "",
@@ -274,96 +213,17 @@ export default {
     };
   },
   methods: {
-    openCreateModal() {
-      this.modalMode = "create";
-      this.form = {
-        account_id: "",
-        currency_id: "",
-        type: "",
-        amount: "",
-        description: "",
-        transaction_date: "",
-      };
-      this.editingId = null;
-      this.showModal = true;
-    },
     openEditModal(transaction) {
-      this.modalMode = "edit";
-      this.form = {
-        account_id: transaction.account_id,
-        currency_id: transaction.currency_id,
-        type: transaction.type,
-        amount: transaction.amount,
-        description: transaction.description || "",
-        transaction_date: transaction.transaction_date,
-      };
-      this.editingId = transaction.id;
-      this.showModal = true;
-    },
-    closeModal() {
-      this.showModal = false;
-    },
-    submit() {
-      if (this.modalMode === "create") {
-        router.post("/transactions", this.form, {
-          onSuccess: () => {
-            this.closeModal();
-            this.$snackbar.add({
-              type: "success",
-              text: "Transaction created successfully!",
-            });
-          },
-          onError: () => {
-            this.$snackbar.add({
-              type: "error",
-              text: "Failed to create transaction. Check your inputs.",
-            });
-          },
-        });
-      } else {
-        router.put(`/transactions/${this.editingId}`, this.form, {
-          onSuccess: () => {
-            this.closeModal();
-            this.$snackbar.add({
-              type: "success",
-              text: "Transaction updated successfully!",
-            });
-          },
-          onError: () => {
-            this.$snackbar.add({
-              type: "error",
-              text: "Failed to update transaction. Check your inputs.",
-            });
-          },
-        });
-      }
+      this.editingTransaction = transaction;
+      this.showEditModal = true;
     },
     openDeleteModal(transaction) {
       this.transactionToDelete = transaction;
       this.showDeleteModal = true;
     },
-    confirmDelete() {
-      if (!this.transactionToDelete) return;
-
-      router.delete(`/transactions/${this.transactionToDelete.id}`, {
-        onSuccess: () => {
-          this.showDeleteModal = false;
-          this.$snackbar.add({
-            type: "success",
-            text: "Transaction deleted successfully!",
-          });
-        },
-        onError: () => {
-          this.$snackbar.add({
-            type: "error",
-            text: "Failed to delete transaction.",
-          });
-        },
-      });
-    },
-    closeDeleteModal() {
-      this.showDeleteModal = false;
-      this.transactionToDelete = null;
+    onAccountChanged(accountId) {
+      this.filterForm.account_id = accountId;
+      this.applyFilter();
     },
     applyFilter() {
       router.get("/transactions", this.filterForm, {
@@ -373,4 +233,6 @@ export default {
     },
   },
 };
+
+
 </script>

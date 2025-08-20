@@ -89,8 +89,9 @@ class OrganisationController extends Controller
     {
         try {
             $organization = Organization::findOrFail($id);
-            return inertia('Treasurer/Organization/EditOrganizationPage', [
-                'organization' => $organization
+            return inertia('Treasurer/OrganizationsPage', [
+                'organizations' => Auth::user()->organizations,
+                'editingOrganization' => $organization
             ]);
         } catch (Exception $e) {
             return back()->withErrors(['error' => $e->getMessage()]);

@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\AuthenticationController;
 use App\Http\Controllers\Treasurer\AccountController;
 use App\Http\Controllers\Treasurer\CurrenciesController;
+use App\Http\Controllers\Treasurer\ReportsController;
 use App\Http\Controllers\Treasurer\DashboardController;
 use App\Http\Controllers\Treasurer\OrganisationController;
 use App\Http\Controllers\Treasurer\TransactionController;
@@ -25,9 +26,43 @@ Route::post('/login', [LoginController::class, 'store'])->name('login');
 Route::get('/authentication', [AuthenticationController::class, 'index'])->middleware('auth')->name('dashboard');
 
 Route::group(['middleware' => ['auth', 'role:treasurer']], function () {
-    Route::resource('organizations', OrganisationController::class);
-    Route::resource('accounts', AccountController::class);
-    Route::resource('dashboard', DashboardController::class);
-    Route::resource('transactions', TransactionController::class);
-    Route::resource('currencies', CurrenciesController::class);
+    // Dashboard
+    Route::get('/dashboard', function () {
+        return redirect()->route('organizations.index');
+    })->name('dashboard.index');
+
+    // Organizations
+    Route::get('/organizations', [OrganisationController::class, 'index'])->name('organizations.index');
+    Route::post('/organizations', [OrganisationController::class, 'store'])->name('organizations.store');
+    Route::get('/organizations/{id}', [OrganisationController::class, 'show'])->name('organizations.show');
+    Route::put('/organizations/{id}', [OrganisationController::class, 'update'])->name('organizations.update');
+    Route::delete('/organizations/{id}', [OrganisationController::class, 'destroy'])->name('organizations.destroy');
+
+    // Accounts
+    Route::get('/accounts', [AccountController::class, 'index'])->name('accounts.index');
+    Route::post('/accounts', [AccountController::class, 'store'])->name('accounts.store');
+    Route::get('/accounts/{id}', [AccountController::class, 'show'])->name('accounts.show');
+    Route::put('/accounts/{id}', [AccountController::class, 'update'])->name('accounts.update');
+    Route::delete('/accounts/{id}', [AccountController::class, 'destroy'])->name('accounts.destroy');
+
+    // Transactions
+    Route::get('/transactions', [TransactionController::class, 'index'])->name('transactions.index');
+    Route::post('/transactions', [TransactionController::class, 'store'])->name('transactions.store');
+    Route::get('/transactions/{id}', [TransactionController::class, 'show'])->name('transactions.show');
+    Route::put('/transactions/{id}', [TransactionController::class, 'update'])->name('transactions.update');
+    Route::delete('/transactions/{id}', [TransactionController::class, 'destroy'])->name('transactions.destroy');
+
+    // Currencies
+    Route::get('/currencies', [CurrenciesController::class, 'index'])->name('currencies.index');
+    Route::post('/currencies', [CurrenciesController::class, 'store'])->name('currencies.store');
+    Route::delete('/currencies/{currencyId}', [CurrenciesController::class, 'destroy'])->name('currencies.destroy');
+
+    // Reports
+    Route::get('/reports', [ReportsController::class, 'index'])->name('reports.index');
+    Route::get('/reports/balance-sheet', [ReportsController::class, 'balanceSheet'])->name('reports.balance-sheet');
+    Route::get('/reports/income-statement', [ReportsController::class, 'incomeStatement'])->name('reports.income-statement');
+    Route::get('/reports/cash-flow', [ReportsController::class, 'cashFlow'])->name('reports.cash-flow');
+    Route::get('/reports/trial-balance', [ReportsController::class, 'trialBalance'])->name('reports.trial-balance');
+    Route::get('/reports/general-ledger', [ReportsController::class, 'generalLedger'])->name('reports.general-ledger');
+    Route::post('/reports/export', [ReportsController::class, 'export'])->name('reports.export');
 });
